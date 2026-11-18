@@ -24,5 +24,7 @@ Two phases, in this order:
 
 ## Repo state
 
-Empty skeleton. Rules details and stack choices are being settled in the design doc
-under `docs/`.
+Design approved, phase 1 plan written and awaiting review. No game code yet.
+
+- Design: `docs/superpowers/specs/2026-11-18-mensch-aergere-dich-nicht-design.md`
+- Phase 1 plan: `docs/superpowers/plans/2026-11-18-phase-1-functionality.md`
