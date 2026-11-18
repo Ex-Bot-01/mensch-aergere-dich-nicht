@@ -1,15 +1,16 @@
 import type { Color, Standing } from '@madn/shared';
 
 import { legalMoves, stepOf, type Move } from './moves.js';
-import { appendEvent, cornerId, type EngineError, type GameState } from './state.js';
-
-/** Colors still in play, in seat order. */
-export function activeOrder(state: GameState): Color[] {
-  return state.players.filter((color) => !state.out.includes(color));
-}
+import {
+  activePlayers,
+  appendEvent,
+  cornerId,
+  type EngineError,
+  type GameState,
+} from './state.js';
 
 function nextSeat(state: GameState, color: Color): Color {
-  const order = activeOrder(state);
+  const order = activePlayers(state);
   return order[(order.indexOf(color) + 1) % order.length]!;
 }
 
@@ -46,9 +47,15 @@ function rank(state: GameState, winner: Color): Standing[] {
     finished: piecesInHome(state, color),
     advance: distanceCovered(state, color),
   }));
+  const outFirst = (color: Color): 0 | 1 => (state.out.includes(color) ? 1 : 0);
   const rest = rows
     .filter((row) => row.color !== winner)
-    .sort((a, b) => b.finished - a.finished || b.advance - a.advance);
+    .sort(
+      (a, b) =>
+        outFirst(a.color) - outFirst(b.color) ||
+        b.finished - a.finished ||
+        b.advance - a.advance,
+    );
 
   return [rows.find((row) => row.color === winner)!, ...rest].map((row, index) => ({
     rank: index + 1,
@@ -110,4 +117,33 @@ export function applyMove(
   return die === 6
     ? { ...next, turn: { color: byColor, stage: 'awaitRoll', die: null } }
     : advanceTurn(next);
+}
+
+/**
+ * Force continue: a friend who never came back stops playing. Their pieces leave the
+ * board, they rank last if the game finishes, and nobody waits on them any more.
+ */
+export function markOut(state: GameState, color: Color): GameState | EngineError {
+  if (!state.players.includes(color)) return { code: 'notAPlayer' };
+  if (state.out.includes(color)) return { code: 'notAPlayer', detail: 'already out' };
+
+  let next: GameState = {
+    ...state,
+    pieces: state.pieces.filter((piece) => piece.color !== color),
+    out: [...state.out, color],
+  };
+  next = appendEvent(next, 'markedOut', { color });
+
+  const remaining = activePlayers(next);
+  if (remaining.length <= 1) {
+    const winner = remaining[0] ?? color;
+    return appendEvent(
+      { ...next, phase: 'finished', standings: rank(next, winner) },
+      'finished',
+      { color: winner },
+    );
+  }
+
+  if (next.turn.color === color) next = advanceTurn(next);
+  return next;
 }

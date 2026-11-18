@@ -29,6 +29,11 @@ export type GameState = {
 
 export const CORNER_SLOTS = [0, 1, 2, 3] as const;
 
+/** Colors still in play, in seat order. A marked-out color is no longer a player. */
+export function activePlayers(state: GameState): Color[] {
+  return state.players.filter((color) => !state.out.includes(color));
+}
+
 export function cornerId(color: Color, slot: number): FieldId {
   return `k:${color}:${slot}`;
 }
