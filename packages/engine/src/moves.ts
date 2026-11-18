@@ -10,7 +10,7 @@ export type Move = { pieceId: string; from: FieldId; to: FieldId; capture?: Colo
  * still in the corner — and for nothing else, since a piece never stands in another
  * color's home column.
  */
-function stepOf(color: Color, loc: FieldId): number | null {
+export function stepOf(color: Color, loc: FieldId): number | null {
   if (loc.startsWith('c')) return (Number(loc.slice(1)) - ENTRY[color] + CIRCUIT_LEN) % CIRCUIT_LEN;
   if (loc.startsWith(`h:${color}:`)) return CIRCUIT_LEN + Number(loc.split(':')[2]) - 1;
   return null;

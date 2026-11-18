@@ -1,35 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import type { Color, FieldId } from '@madn/shared';
+import type { FieldId } from '@madn/shared';
 
 import { fieldId } from '../src/board.js';
 import { legalMoves } from '../src/moves.js';
 import type { GameState } from '../src/state.js';
-import { createGame } from '../src/state.js';
-
-const TWO: Color[] = ['red', 'blue'];
-
-/** A fresh two-player game whose turn belongs to `color`. */
-function game(color: Color = 'red', seed = 7): GameState {
-  const state = createGame({ colors: [...TWO], hostColor: 'red', seed });
-  return { ...state, turn: { color, stage: 'awaitRoll', die: null } };
-}
-
-/** Give the player on turn a die value, as a roll would. */
-function rolled(state: GameState, die: number): GameState {
-  return { ...state, turn: { ...state.turn, die, stage: 'awaitMove' } };
-}
-
-/** Stand a named piece on a field, clearing anyone who was there. */
-function stand(state: GameState, pieceId: string, loc: FieldId): GameState {
-  const moving = state.pieces.find((p) => p.id === pieceId)!;
-  return {
-    ...state,
-    pieces: state.pieces
-      .filter((p) => !(p.loc === loc && p.id !== pieceId))
-      .map((p) => (p.id === pieceId ? { ...p, loc } : p)),
-  };
-}
+import { game, rolled, stand } from './helpers.js';
 
 const moveTo = (state: GameState, field: FieldId) =>
   legalMoves(state).filter((m) => m.to === field);
