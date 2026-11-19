@@ -92,3 +92,8 @@ export type Intent =
 export type ServerMessage =
   | { type: 'snapshot'; snapshot: Snapshot }
   | { type: 'notice'; notice: Notice };
+
+/** What a browser may send us. `hello` opens a socket; after that, only intents. */
+export type ClientMessage =
+  | { type: 'hello'; code: string; token: string; name?: string }
+  | { type: 'intent'; intent: Intent };

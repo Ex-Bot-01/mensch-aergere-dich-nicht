@@ -8,7 +8,9 @@
   ],
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "start": "tsx apps/server/src/main.ts",
+    "dev": "tsx watch apps/server/src/main.ts"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
