@@ -1,0 +1,272 @@
+:root {
+  color-scheme: light;
+  --red: #c8102e;
+  --blue: #1f5fbf;
+  --green: #1a7f37;
+  --yellow: #e0a500;
+  --ink: #1d1a17;
+  --paper: #f6f1e7;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.screen {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 1.25rem 1rem calc(1.5rem + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+h1 {
+  font-size: 1.4rem;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.tagline,
+.hint,
+.notice,
+.turn {
+  margin: 0;
+  color: #5b534b;
+}
+
+label {
+  font-size: 0.9rem;
+  color: #5b534b;
+}
+
+input {
+  font: inherit;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid #d8cfc2;
+  border-radius: 10px;
+  background: #fff;
+  min-height: 44px;
+}
+
+input[name="code"] {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+button {
+  font: inherit;
+  min-height: 44px;
+  padding: 0 1rem;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ink);
+  color: #fff;
+  cursor: pointer;
+}
+
+button[disabled] {
+  background: #cfc6b9;
+  color: #f7f4ef;
+  cursor: default;
+}
+
+.join {
+  display: flex;
+  gap: 0.5rem;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.join input {
+  flex: 1 1 8rem;
+}
+
+.notice,
+.toast {
+  min-height: 1.25rem;
+  color: #9b1c31;
+}
+
+.toast {
+  padding: 0.5rem 0.75rem;
+  background: #fde8ea;
+  border-radius: 10px;
+}
+
+.code strong {
+  font-size: 1.6rem;
+  letter-spacing: 0.14em;
+}
+
+.seats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.seats button {
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid #d8cfc2;
+}
+
+.board {
+  position: relative;
+  width: min(94vw, 60vh);
+  aspect-ratio: 1;
+  margin: 0 auto;
+  background: #fffdf8;
+  border: 1px solid #e2d9cb;
+  border-radius: 14px;
+}
+
+.board-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.board-svg .field {
+  fill: #e6ddcd;
+}
+
+.board-svg .field.tinted {
+  fill-opacity: 0.35;
+}
+
+.board-svg .piece,
+.board-svg .field.tinted,
+.board-svg .hit {
+  fill: var(--ink);
+}
+
+.board-svg [data-color="red"] {
+  fill: var(--red);
+}
+.board-svg [data-color="blue"] {
+  fill: var(--blue);
+}
+.board-svg [data-color="green"] {
+  fill: var(--green);
+}
+.board-svg [data-color="yellow"] {
+  fill: var(--yellow);
+}
+
+.board-svg .hit {
+  fill-opacity: 0;
+}
+
+.board-svg .legal {
+  stroke: #17a35c;
+  stroke-width: 1.2;
+  cursor: pointer;
+}
+
+.board-svg .flash {
+  stroke: #9b1c31;
+  stroke-width: 1.6;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.die {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #d8cfc2;
+  font-size: 1.3rem;
+}
+
+.waiting {
+  margin: 0;
+  color: #9b1c31;
+}
+
+.status {
+  margin: 0;
+  padding: 0.5rem 1rem;
+  background: #9b1c31;
+  color: #fff;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.status[hidden] {
+  display: none;
+}
+
+.dock {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  width: 96px;
+  height: 96px;
+  pointer-events: none;
+}
+
+.dock[hidden] {
+  display: none;
+}
+
+.dice-canvas,
+.dice-text {
+  width: 100%;
+  height: 100%;
+}
+
+.dice-text {
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #fffdf8;
+  border: 1px solid #d8cfc2;
+  font-size: 2rem;
+  color: var(--ink);
+}
+
+[data-standings] {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.swatch {
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  border-radius: 50%;
+  margin-right: 0.4em;
+  background: var(--ink);
+}
+
+.swatch[data-color="red"] {
+  background: var(--red);
+}
+.swatch[data-color="blue"] {
+  background: var(--blue);
+}
+.swatch[data-color="green"] {
+  background: var(--green);
+}
+.swatch[data-color="yellow"] {
+  background: var(--yellow);
+}

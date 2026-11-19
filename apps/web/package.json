@@ -1,0 +1,23 @@
+{
+  "name": "@madn/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@madn/engine": "*",
+    "@madn/shared": "*",
+    "three": "^0.187.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.187.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8"
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "@madn/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/main.ts"
+  },
+  "dependencies": {
+    "@madn/engine": "*",
+    "@madn/shared": "*",
+    "ws": "^8.18.0"
+  }
+}
