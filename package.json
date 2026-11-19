@@ -11,11 +11,13 @@
     "typecheck": "tsc -p tsconfig.json",
     "start": "tsx apps/server/src/main.ts",
     "dev": "tsx watch apps/server/src/main.ts",
-    "build": "npm run build -w @madn/web"
+    "build": "npm run build -w @madn/web",
+    "accept": "node scripts/acceptance.mjs"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
     "happy-dom": "^21.0.4",
+    "playwright": "^1.65.1",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vitest": "^5.1.1"
