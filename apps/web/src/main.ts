@@ -127,11 +127,14 @@ async function join(code: string, who: string): Promise<void> {
   open(result.access!.code);
 }
 
-/** A reload inside a game rejoins the same seat, because the token lives in this tab. */
+/**
+ * A link with a code in it goes straight back into the game if we already know who is
+ * using this tab. A stranger who follows a link still gets asked for a name first.
+ */
 const code = urlCode();
-if (code) {
-  name = recalledName(code) ?? name;
-  void join(code.toUpperCase(), name || 'guest');
+const known = code ? recalledName(code) ?? name : '';
+if (code && known) {
+  void join(code.toUpperCase(), known);
 } else {
   draw();
 }
