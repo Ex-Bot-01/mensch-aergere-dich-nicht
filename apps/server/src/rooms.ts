@@ -29,8 +29,16 @@ import { newCode } from './codes.js';
 /** How many happenings a snapshot carries for clients to animate. */
 export const EVENT_LOG_LEN = 12;
 
-export type Player = { token: string; name: string; color: Color | null; connected: boolean };
-export type Spectator = { token: string; name: string; connected: boolean };
+export type Player = {
+  token: string;
+  name: string;
+  color: Color | null;
+  connected: boolean;
+  /** The last time this person's socket proved they were there. */
+  lastSeenAt: number;
+};
+
+export type Spectator = { token: string; name: string; connected: boolean; lastSeenAt: number };
 
 export type Room = {
   code: string;
@@ -64,7 +72,7 @@ function colorOf(room: Room, token: string): Color | null {
   return room.players.get(token)?.color ?? null;
 }
 
-function playerByColor(room: Room, color: Color): Player | undefined {
+export function playerByColor(room: Room, color: Color): Player | undefined {
   for (const player of room.players.values()) if (player.color === color) return player;
   return undefined;
 }
@@ -81,7 +89,18 @@ export function createRoom(
     code,
     phase: 'lobby',
     hostToken: opts.token,
-    players: new Map([[opts.token, { token: opts.token, name: opts.name, color: null, connected: true }]]),
+    players: new Map([
+      [
+        opts.token,
+        {
+          token: opts.token,
+          name: opts.name,
+          color: null,
+          connected: true,
+          lastSeenAt: store.now(),
+        },
+      ],
+    ]),
     spectators: new Map(),
     seatOrder: [],
     abandoned: new Map(),
@@ -112,6 +131,7 @@ export function joinByCode(
   if (known) {
     known.connected = true;
     known.name = opts.name;
+    known.lastSeenAt = store.now();
     return { room };
   }
 
@@ -123,11 +143,18 @@ export function joinByCode(
       name: opts.name,
       color: reclaimed,
       connected: true,
+      lastSeenAt: store.now(),
     });
     return { room };
   }
 
-  const player = { token: opts.token, name: opts.name, color: null as Color | null, connected: true };
+  const player: Player = {
+    token: opts.token,
+    name: opts.name,
+    color: null,
+    connected: true,
+    lastSeenAt: store.now(),
+  };
   if (room.phase === 'lobby') room.players.set(opts.token, player);
   else room.spectators.set(opts.token, { ...player });
   return { room };
@@ -256,7 +283,7 @@ function apply(room: Room, token: string, intent: Intent, store: Store): Notice 
     case 'forceContinue': {
       const playing = gameOf(room);
       if ('notice' in playing) return playing.notice;
-      if (!room.players.has(token)) return { code: 'notAPlayer' };
+      if (!room.players.get(token)?.connected) return { code: 'notAPlayer' };
 
       const marked = markOut(playing.game, intent.color);
       if ('code' in marked) return marked;
