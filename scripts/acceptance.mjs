@@ -131,7 +131,6 @@ try {
 
   // 4. Play the game, one legal action at a time, watching for the things to prove.
   let refreshed = false;
-  let dieBeforeRefresh = '';
   let sawCapture = false;
   let realTap = false;
   const startedAt = Date.now();
@@ -200,6 +199,38 @@ try {
       const box = await pending.boundingBox().catch(() => null);
       if (box) widestTap = Math.max(widestTap, Math.min(box.width, box.height));
 
+      // Once, and only once: reload while a choice is pending.
+      if (!refreshed && tab === anna) {
+        const seenBefore = await anna.page.evaluate(() => ({
+          die: document.querySelector('[data-die]')?.textContent ?? '',
+          turn: document.querySelector('[data-turn]')?.textContent ?? '',
+          legal: document.querySelectorAll('.piece.legal').length,
+        }));
+        await anna.page.reload({ waitUntil: 'domcontentloaded' });
+        await anna.page.waitForSelector('.table');
+        // Give the rejoined tab a beat to catch up, the way a friend would notice.
+        await anna.page
+          .waitForFunction(
+            () => document.querySelectorAll('.piece.legal').length > 0,
+            null,
+            { timeout: 4_000 },
+          )
+          .catch(() => {});
+        refreshed = true;
+        const seenAfter = await anna.page.evaluate(() => ({
+          die: document.querySelector('[data-die]')?.textContent ?? '',
+          turn: document.querySelector('[data-turn]')?.textContent ?? '',
+          legal: document.querySelectorAll('.piece.legal').length,
+          waiting: document.querySelector('[data-waiting]')?.textContent ?? '',
+        }));
+        ok(
+          'a refresh mid-choice returns to the same pending move',
+          seenAfter.legal > 0 && seenAfter.die === seenBefore.die,
+          `before ${JSON.stringify(seenBefore)} after ${JSON.stringify(seenAfter)}`,
+        );
+        await shot(anna.page, '02-mid-choice');
+      }
+
       // Once: a friend's real mouse click on the highlighted piece, not a scripted one.
       if (!realTap) {
         realTap = true;
@@ -218,18 +249,6 @@ try {
             return false;
           });
         ok('a friend can tap the highlighted piece', tapped && hitTest, `die ${before}`);
-      }
-
-      // Once, and only once: reload while a choice is pending.
-      if (!refreshed && tab === anna) {
-        dieBeforeRefresh = await text(anna.page, '[data-die]');
-        await anna.page.reload({ waitUntil: 'domcontentloaded' });
-        await anna.page.waitForSelector('.table');
-        refreshed = true;
-        const stillPending = (await count(anna.page, '.piece.legal')) > 0;
-        const sameDie = (await text(anna.page, '[data-die]')) === dieBeforeRefresh;
-        ok('a refresh mid-choice returns to the same pending move', stillPending && sameDie, `die ${dieBeforeRefresh}`);
-        await shot(anna.page, '02-mid-choice');
       }
 
       if (await tapInPage(tab.page)) {
