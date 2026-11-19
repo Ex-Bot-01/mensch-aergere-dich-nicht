@@ -8,6 +8,8 @@ import { startServer, type Running } from '../src/main.js';
 /** A browser in miniature: one socket, one remembered token, a queue of what arrived. */
 class Client {
   readonly messages: ServerMessage[] = [];
+  /** What arrived while nobody was reading, in order. */
+  private pending: ServerMessage[] = [];
   private waiters: ((message: ServerMessage) => void)[] = [];
 
   constructor(
@@ -17,11 +19,24 @@ class Client {
     ws.on('message', (raw) => {
       const message = JSON.parse(String(raw)) as ServerMessage;
       this.messages.push(message);
-      this.waiters.shift()?.(message);
+      if (process.env.E2E_TRACE) {
+        console.log(
+          `[trace ${this.token}]`,
+          message.type === 'snapshot'
+            ? `rev=${message.snapshot.rev} phase=${message.snapshot.phase} die=${message.snapshot.game?.die ?? '-'} turn=${message.snapshot.game?.turnColor ?? '-'}`
+            : `notice=${message.notice.code}`,
+        );
+      }
+      const waiter = this.waiters.shift();
+      if (waiter) waiter(message);
+      else this.pending.push(message);
     });
   }
 
   next(timeoutMs = 2_000): Promise<ServerMessage> {
+    const buffered = this.pending.shift();
+    if (buffered) return Promise.resolve(buffered);
+
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error(`nothing arrived for ${this.token}`)), timeoutMs);
       this.waiters.push((message) => {

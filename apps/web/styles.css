@@ -128,40 +128,52 @@ button[disabled] {
   border-radius: 14px;
 }
 
-.piece {
-  position: absolute;
-  width: 5.5%;
-  height: 5.5%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: var(--ink);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 35%);
+.board-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
-.piece[data-color="red"] {
-  background: var(--red);
-}
-.piece[data-color="blue"] {
-  background: var(--blue);
-}
-.piece[data-color="green"] {
-  background: var(--green);
-}
-.piece[data-color="yellow"] {
-  background: var(--yellow);
+.board-svg .field {
+  fill: #e6ddcd;
 }
 
-.piece.legal {
-  outline: 3px solid #2b7;
-  outline-offset: 1px;
+.board-svg .field.tinted {
+  fill-opacity: 0.35;
+}
+
+.board-svg .piece,
+.board-svg .field.tinted,
+.board-svg .hit {
+  fill: var(--ink);
+}
+
+.board-svg [data-color="red"] {
+  fill: var(--red);
+}
+.board-svg [data-color="blue"] {
+  fill: var(--blue);
+}
+.board-svg [data-color="green"] {
+  fill: var(--green);
+}
+.board-svg [data-color="yellow"] {
+  fill: var(--yellow);
+}
+
+.board-svg .hit {
+  fill-opacity: 0;
+}
+
+.board-svg .legal {
+  stroke: #17a35c;
+  stroke-width: 1.2;
   cursor: pointer;
 }
 
-/* Touch targets for legal pieces: the visible dot is small, the tap area is not. */
-.piece.legal::after {
-  content: "";
-  position: absolute;
-  inset: -80%;
+.board-svg .flash {
+  stroke: #9b1c31;
+  stroke-width: 1.6;
 }
 
 .controls {

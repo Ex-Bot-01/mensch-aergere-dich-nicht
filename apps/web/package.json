@@ -7,6 +7,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@madn/engine": "*",
     "@madn/shared": "*",
     "three": "^0.187.0"
   },
