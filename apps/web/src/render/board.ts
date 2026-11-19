@@ -11,8 +11,12 @@ export function renderBoard(
   root: HTMLElement,
   snapshot: Snapshot,
   onPick: (pieceId: string) => void,
+  opts: { interactive?: boolean } = {},
 ): void {
-  const legal = new Set((snapshot.game?.legalMoves ?? []).map((move) => move.pieceId));
+  const interactive = opts.interactive !== false;
+  const legal = new Set(
+    interactive ? (snapshot.game?.legalMoves ?? []).map((move) => move.pieceId) : [],
+  );
   const lastCapture = [...(snapshot.events ?? [])]
     .reverse()
     .find((event) => event.kind === 'captured');

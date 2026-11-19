@@ -14,9 +14,12 @@ tossed, pieces get moved, someone gets ärgert.
 
 Classic rules: four pieces each, a six to leave the corner, another roll for every
 six, capture sends a piece back to its corner, and the first color with all four in
-the home column wins. Nobody needs an account. If a friend's connection dies the table
-waits for them, and any player can end their game so the rest can carry on. Anyone who
-joins after the start watches.
+the home column wins. Nobody needs an account.
+
+Connections are expected to be bad sometimes. A tab that loses its signal says so,
+redials by itself and gets its seat back — no refresh, no lost turn. If a friend's
+connection dies for real the table waits for them, and any player can end their game so
+the rest can carry on. Anyone who joins after the start watches.
 
 ## Running it
 
@@ -45,7 +48,7 @@ comes back to the same player and four tabs on one laptop make a full game.
 ## Checking it
 
 ```bash
-npm test        # 152 tests: rules engine, rooms, lifecycle, wire protocol, screens
+npm test        # 167 tests: rules engine, rooms, lifecycle, wire protocol, screens
 npm run typecheck
 npm run build && npm start &      # then
 npm run accept                    # five real browsers play a whole game
@@ -53,8 +56,9 @@ npm run accept                    # five real browsers play a whole game
 
 `npm run accept` drives Chromium with Playwright (`npx playwright install chromium`
 once). It seats four players and a spectator, plays to a winner, refreshes a tab
-mid-choice, drops a player, forces continue, and measures the tap targets on a
-phone-sized screen — printing PASS or FAIL for each and screenshots to
+mid-choice, cuts one player's connection and watches it come back on its own, drops a
+player for good, forces continue, and measures the tap targets on a phone-sized screen —
+23 checks, printing PASS or FAIL for each, with screenshots to
 `.superpowers/sdd/2026-11-18-phase-1-functionality/shots/`.
 
 ## Layout

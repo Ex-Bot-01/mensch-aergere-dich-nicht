@@ -1,9 +1,9 @@
-import type { Intent, Notice, ServerMessage } from '@madn/shared';
+import type { Notice } from '@madn/shared';
+import type { SocketLike } from './connection.js';
 
 const TOKEN_KEY = 'madn:token';
 
 export type Access = { code: string; token: string };
-export type Connection = { send(intent: Intent): void; close(): void };
 
 /** One identity per browser tab: sessionStorage survives a reload, not a new tab. */
 export function tabToken(): string {
@@ -49,29 +49,37 @@ export async function joinGame(
   return result.notice ? { notice: result.notice } : { access: { code, token } };
 }
 
-/** Open the socket for this tab's seat and hand every message to the screen. */
-export function connect(
-  code: string,
-  token: string,
-  onMessage: (message: ServerMessage) => void,
-  name = 'guest',
-): Connection {
+/**
+ * One raw websocket to the room, in the shape the reconnecting link wants. It says
+ * nothing about who is using it — that hello waits until the socket is open, so a
+ * retry after a dropout looks exactly like the first attempt did.
+ */
+export function webSocket(): SocketLike {
   const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
   const socket = new WebSocket(`${scheme}://${location.host}/ws`);
+  const handlers: Record<string, ((value?: unknown) => void)[]> = {};
 
-  socket.addEventListener('open', () => {
-    socket.send(JSON.stringify({ type: 'hello', code, token, name }));
-  });
+  const fire = (event: string, value?: unknown): void => {
+    for (const handler of handlers[event] ?? []) handler(value);
+  };
+
+  socket.addEventListener('open', () => fire('open'));
   socket.addEventListener('message', (event) => {
-    onMessage(JSON.parse(String(event.data)) as ServerMessage);
+    try {
+      fire('message', JSON.parse(String(event.data)));
+    } catch {
+      // A message we cannot read is not worth tearing the connection down over.
+    }
   });
+  socket.addEventListener('close', () => fire('close'));
 
   return {
-    send: (intent) => {
-      if (socket.readyState === WebSocket.OPEN) {
-        socket.send(JSON.stringify({ type: 'intent', intent }));
-      }
+    send: (message) => {
+      if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(message));
     },
     close: () => socket.close(),
+    on: (event, handler) => {
+      handlers[event] = [...(handlers[event] ?? []), handler];
+    },
   };
 }

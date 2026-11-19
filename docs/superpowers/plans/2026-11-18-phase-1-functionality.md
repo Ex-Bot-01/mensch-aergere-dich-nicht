@@ -259,21 +259,32 @@ No new behavior; this task proves the phase-1 done list and fixes whatever it fi
 
 **Results (2026-11-18).** Steps 1–5 ran in `scripts/acceptance.mjs`: five real Chromium
 contexts (four players, one phone-sized spectator) against `npm start`. A whole game was
-played to a winner — 169 turns, 190 rolls, 159 moves, no failed taps, ~46 s — and 19 of
-19 checks passed: code format, four seats claimed by name, host-only start, spectator
-with no roll button, a real mouse tap on a highlighted piece (45 px target), a refresh
-between roll and move returning the same pending choice and die value, a dropped player
-pausing the table with "Waiting for Yellow…", force continue from a non-host tab taking
-that color off the board and playing on, a capture flashing on the board, the dice drawn
-by three.js, standings at the end, play again restoring the same four seats, and a 340 px
-square board on a 360 px screen, and a stranger arriving with a link being asked their
-name before they join. Screenshots:
+played to a winner — 193 turns, 218 rolls, 180 moves, no failed taps, ~56 s — and 23 of
+23 checks passed: code format, a stranger arriving with a link being asked their name,
+four seats claimed by name, host-only start, spectator with no roll button, a real mouse
+tap on a highlighted piece (45 px target), a tab that loses its connection saying so and
+rejoining by itself in the same seat, the table waiting for a player who vanished with
+"Waiting for Blue…" while nobody else can play, force continue from a non-host tab taking
+that color off the board and playing on, a refresh between roll and move returning the
+same pending choice and die value, a capture flashing on the board, the dice drawn by
+three.js, standings at the end, play again restoring the same four seats, and a 340 px
+square board on a 360 px screen. Screenshots:
 `.superpowers/sdd/2026-11-18-phase-1-functionality/shots/`.
 
-Two things the run changed in the code, both found by it rather than by unit tests:
+Three things the run changed in the code, all found by it rather than by unit tests:
 
 - `apps/server/test/e2e.test.ts` dropped any snapshot that arrived while no read was
   pending, so a passing test failed one run in six. The harness now queues them.
 - A link with a code in it no longer joins as `guest` for someone the browser has never
   seen; it asks their name first, and only rejoins silently when this tab already knows
   who it is.
+- **The browser never reconnected.** The server survived a dropped socket and the design
+  promises short network drops are survivable, but a tab whose websocket closed sat on a
+  stale board — every phone changing masts would have had to be refreshed by hand.
+  `apps/web/src/connection.ts` now redials with the same token (500 ms, doubling to 4 s),
+  says "Connection lost — trying again" while it is out, disables everything that needs
+  the wire instead of swallowing taps, and stops when the room is gone for good. Making
+  the run simulate this took some doing: Playwright's `setOffline` only blocks *new*
+  sockets and this Chromium has no `Network.closeWebSocket`, so the script patches
+  `window.WebSocket` to record the app's own socket and hangs that up while the network
+  stays down.

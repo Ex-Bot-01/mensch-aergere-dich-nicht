@@ -1,28 +1,24 @@
 import type { Intent, Notice, ServerMessage, Snapshot } from '@madn/shared';
 
-import {
-  connect,
-  createGame,
-  joinGame,
-  recalledName,
-  rememberName,
-  tabToken,
-  type Connection,
-} from './api.js';
+import { createGame, joinGame, recalledName, rememberName, tabToken, webSocket } from './api.js';
+import { connectResilient, type Link, type Status } from './connection.js';
 import { createDice, TOSS_MS, type Dice } from './dice.js';
 import { drainEvents, latestEventId } from './events.js';
 import { noticeText } from './copy.js';
 import { renderHome } from './render/home.js';
 import { renderLobby } from './render/lobby.js';
 import { renderTable } from './render/table.js';
+import { renderStatus } from './render/status.js';
 import type { Actions } from './render/shared.js';
 
 const root = document.querySelector<HTMLElement>('#app')!;
 const dock = document.querySelector<HTMLElement>('#dock')!;
+const statusLine = document.querySelector<HTMLElement>('#status')!;
 const NAME_KEY = 'madn:lastname';
 
 const token = tabToken();
-let connection: Connection | null = null;
+let connection: Link | null = null;
+let online = true;
 let snapshot: Snapshot | null = null;
 let notice: Notice | null = null;
 let name = sessionStorage.getItem(NAME_KEY) ?? '';
@@ -41,6 +37,7 @@ function draw(): void {
 
   const actions: Actions = {
     me: token,
+    online,
     roll: () => send({ type: 'roll' }),
     move: (pieceId) => send({ type: 'move', pieceId }),
     pickColor: (color) => send({ type: 'pickColor', color }),
@@ -104,7 +101,18 @@ function animate(snapshot: Snapshot): void {
 
 function open(code: string): void {
   connection?.close();
-  connection = connect(code, token, onMessage, name);
+  connection = connectResilient({
+    code,
+    token,
+    name,
+    open: webSocket,
+    onMessage,
+    onStatus: (status: Status) => {
+      online = status === 'online';
+      renderStatus(statusLine, status);
+      if (snapshot) draw();
+    },
+  });
 }
 
 async function create(who: string): Promise<void> {

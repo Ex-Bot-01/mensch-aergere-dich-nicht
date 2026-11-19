@@ -7,11 +7,12 @@ import { myPlayer, type Actions } from './shared.js';
 export function renderLobby(root: HTMLElement, snapshot: Snapshot, actions: Actions): void {
   const seated = snapshot.players.filter((player) => player.color).length;
   const isHost = snapshot.hostToken === actions.me;
+  const online = actions.online !== false;
 
   const rows = COLORS.map((color) => {
     const holder = snapshot.players.find((player) => player.color === color);
     const mine = holder?.token === actions.me;
-    const disabled = holder !== undefined && !mine;
+    const disabled = !online || (holder !== undefined && !mine);
     const label = holder
       ? `${colorLabel(color)} — ${mine ? 'you' : esc(holder.name)}`
       : `${colorLabel(color)} — free`;
@@ -27,9 +28,11 @@ export function renderLobby(root: HTMLElement, snapshot: Snapshot, actions: Acti
       <button type="button" data-act="copy">copy</button></p>
     <ul class="seats">${rows}</ul>
     ${
-      isHost
-        ? `<button type="button" data-act="start"${seated < 2 ? ' disabled' : ''}>Start game</button>`
-        : '<p class="hint">Waiting for the host to start.</p>'
+      !online
+        ? ''
+        : isHost
+          ? `<button type="button" data-act="start"${seated < 2 ? ' disabled' : ''}>Start game</button>`
+          : '<p class="hint">Waiting for the host to start.</p>'
     }
     ${seated < 2 ? '<p class="hint">Two players are needed.</p>' : ''}
     ${snapshot.spectators.length > 0 ? `<p class="hint">${snapshot.spectators.length} watching.</p>` : ''}

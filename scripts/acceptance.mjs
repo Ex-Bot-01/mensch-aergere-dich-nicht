@@ -26,6 +26,17 @@ const browser = await chromium.launch();
 /** A context of its own, so each player gets a separate sessionStorage token. */
 async function openTab(name, viewport = { width: 480, height: 900 }) {
   const context = await browser.newContext({ viewport });
+  // So the run can hang up this tab's own connection later, the way a dead mast would.
+  await context.addInitScript(() => {
+    const Real = window.WebSocket;
+    window.__sockets = [];
+    window.WebSocket = class extends Real {
+      constructor(...args) {
+        super(...args);
+        window.__sockets.push(this);
+      }
+    };
+  });
   const page = await context.newPage();
   page.setDefaultTimeout(15_000);
   const problems = [];
@@ -128,6 +139,7 @@ try {
   let saw3dDice = false;
   let widestTap = 0;
   let disconnected = false;
+  let dropped = false;
   const dan = tabs[3];
 
   /**
@@ -233,16 +245,58 @@ try {
       }
       if (await has(tab.page, 'canvas.dice-canvas')) saw3dDice = true;
 
-      // Halfway in, one player's connection dies and the table must wait for them.
-      if (!disconnected && tally.moves > 6) {
+      // Once: a phone loses signal, comes back, and never lost its seat.
+      if (!dropped && tally.moves > 4) {
+        dropped = true;
+        // The network goes down *and* the live socket dies, as it does on a phone.
+        await ben.context.setOffline(true);
+        await ben.page.evaluate(() => {
+          for (const socket of window.__sockets ?? []) socket.close();
+        });
+
+        const told = await ben.page
+          .waitForFunction(() => document.querySelector('#status')?.hidden === false, null, { timeout: 8_000 })
+          .then(() => true)
+          .catch(() => false);
+        ok('a tab that lost signal says so', told, await text(ben.page, '#status'));
+
+        const waiting = await anna.page
+          .waitForSelector('[data-waiting]', { timeout: 10_000 })
+          .then(() => true)
+          .catch(() => false);
+        ok('the table waits for the player who vanished', waiting, await text(anna.page, '[data-waiting]'));
+        const othersBlocked = (await count(anna.page, 'button[data-act="roll"]:not([disabled])')) === 0;
+        ok('nobody plays while the table is waiting', othersBlocked);
+        await shot(anna.page, '07-waiting');
+
+        await ben.context.setOffline(false);
+        const back = await ben.page
+          .waitForFunction(
+            () =>
+              document.querySelector('#status')?.hidden === true &&
+              Boolean(document.querySelector('.table [data-turn]')),
+            null,
+            { timeout: 20_000 },
+          )
+          .then(() => true)
+          .catch(() => false);
+        const sameSeat = await ben.page.evaluate(
+          () => new URLSearchParams(window.location.search).get('code')?.length === 6,
+        );
+        ok('the dropped phone rejoins on its own, same seat', back && sameSeat);
+        await shot(ben.page, '08-back');
+      }
+
+      // Later: somebody really does not come back, and a friend ends their game.
+      if (!disconnected && tally.moves > 14) {
         disconnected = true;
         dan.closed = true;
         await dan.context.close();
         const banner = await anna.page
-          .waitForSelector('[data-waiting]', { timeout: 5_000 })
+          .waitForSelector('[data-waiting]', { timeout: 10_000 })
           .then(() => true)
           .catch(() => false);
-        ok('a dropped player pauses the table', banner, await text(anna.page, '[data-waiting]'));
+        ok('a player who never comes back pauses the table', banner, await text(anna.page, '[data-waiting]'));
 
         const forcedButton = ben.page.locator('[data-act="forceContinue"]');
         ok('any connected human may force continue, host or not', (await forcedButton.count()) > 0);
