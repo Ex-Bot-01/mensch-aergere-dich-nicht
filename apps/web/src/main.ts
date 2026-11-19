@@ -9,6 +9,8 @@ import {
   tabToken,
   type Connection,
 } from './api.js';
+import { createDice, TOSS_MS, type Dice } from './dice.js';
+import { drainEvents, latestEventId } from './events.js';
 import { noticeText } from './copy.js';
 import { renderHome } from './render/home.js';
 import { renderLobby } from './render/lobby.js';
@@ -16,6 +18,7 @@ import { renderTable } from './render/table.js';
 import type { Actions } from './render/shared.js';
 
 const root = document.querySelector<HTMLElement>('#app')!;
+const dock = document.querySelector<HTMLElement>('#dock')!;
 const NAME_KEY = 'madn:lastname';
 
 const token = tabToken();
@@ -23,6 +26,9 @@ let connection: Connection | null = null;
 let snapshot: Snapshot | null = null;
 let notice: Notice | null = null;
 let name = sessionStorage.getItem(NAME_KEY) ?? '';
+let dice: Dice | null = null;
+let seenEventId = 0;
+let timers: ReturnType<typeof setTimeout>[] = [];
 
 const urlCode = (): string => new URLSearchParams(location.search).get('code') ?? '';
 const send = (intent: Intent): void => connection?.send(intent);
@@ -41,6 +47,7 @@ function draw(): void {
     unpick: () => send({ type: 'unpick' }),
     start: () => send({ type: 'start' }),
     forceContinue: (color) => send({ type: 'forceContinue', color }),
+    returnToLobby: () => send({ type: 'returnToLobby' }),
   };
 
   if (snapshot.phase === 'playing' || snapshot.phase === 'finished') renderTable(root, snapshot, actions);
@@ -66,6 +73,33 @@ function onMessage(message: ServerMessage): void {
   history.replaceState(null, '', `?code=${snapshot.code}`);
   rememberName(snapshot.code, name);
   draw();
+  animate(snapshot);
+}
+
+/**
+ * The dice toss is only for looks: the server already moved on. Rolls are replayed in
+ * order, one toss each, and a client that woke up far behind skips straight to the board.
+ */
+function animate(snapshot: Snapshot): void {
+  const fresh = drainEvents(snapshot, seenEventId);
+  seenEventId = latestEventId(snapshot);
+
+  if (snapshot.phase === 'lobby') {
+    dock.hidden = true;
+    return;
+  }
+
+  const rolls = fresh.filter((event) => event.kind === 'rolled');
+  if (rolls.length === 0) return;
+
+  dice ??= createDice(dock);
+  dock.hidden = false;
+  for (const timer of timers) clearTimeout(timer);
+  timers = rolls.flatMap((event, index) => {
+    const value = Number(event.payload['value'] ?? 0);
+    if (value < 1 || value > 6) return [];
+    return [setTimeout(() => dice?.show(value), index * TOSS_MS)];
+  });
 }
 
 function open(code: string): void {

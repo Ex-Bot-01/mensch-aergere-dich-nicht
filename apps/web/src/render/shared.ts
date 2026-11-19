@@ -9,6 +9,7 @@ export type Actions = {
   unpick: () => void;
   start: () => void;
   forceContinue: (color: Color) => void;
+  returnToLobby: () => void;
 };
 
 export type HomeApi = {

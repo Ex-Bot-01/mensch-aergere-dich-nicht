@@ -89,7 +89,12 @@ export function tick(store: Store, now: number): ClosedRoom[] {
 
     const attached = everyone.some((person) => person.connected);
     const idleFor = now - room.lastActivityAt;
-    if ((!attached && idleFor > EMPTY_ROOM_TTL_MS) || idleFor > IDLE_ROOM_TTL_MS) {
+    // A finished table with people at it is not idle: they are reading the standings.
+    const watched = attached && room.phase === 'finished';
+    if (
+      (!attached && idleFor > EMPTY_ROOM_TTL_MS) ||
+      (idleFor > IDLE_ROOM_TTL_MS && !watched)
+    ) {
       closed.push({ code, phase: room.phase, players: room.players.size });
       store.rooms.delete(code);
     }

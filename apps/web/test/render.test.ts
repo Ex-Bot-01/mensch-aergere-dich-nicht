@@ -18,6 +18,7 @@ const actions = (me: string) => ({
   unpick: noop,
   start: noop,
   forceContinue: noop,
+  returnToLobby: noop,
 });
 
 /** Same table, but the die has not been rolled yet. */
@@ -112,6 +113,16 @@ describe('the table screen', () => {
     expect(playing.querySelector('[data-standings]')).toBeNull();
     expect(done.querySelectorAll('[data-standings] li')).toHaveLength(2);
     expect(done.querySelector('[data-standings] li')?.textContent).toMatch(/red/i);
+  });
+
+  it('offers play again to the host once the game is over, and only to them', () => {
+    const asHost = mount((el) => renderTable(el, FINISHED, actions('tab-one')));
+    document.body.innerHTML = '';
+    const asGuest = mount((el) => renderTable(el, FINISHED, actions('tab-two')));
+
+    expect(asHost.querySelector('[data-act="again"]')).not.toBeNull();
+    expect(asGuest.querySelector('[data-act="again"]')).toBeNull();
+    expect(asGuest.textContent).toMatch(/waiting for anna/i);
   });
 
   it('lets a connected human send a stalled player home', () => {

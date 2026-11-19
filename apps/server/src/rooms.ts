@@ -189,6 +189,7 @@ export function handleIntent(
   const room = store.rooms.get(code);
   if (!room) return { notice: { code: 'unknownCode' } };
   room.lastActivityAt = store.now();
+  if (intent.type === 'returnToLobby') return returnToLobby(store, code, token);
 
   const failure = apply(room, token, intent, store);
   if (failure) return { notice: failure };
@@ -297,6 +298,40 @@ function apply(room: Room, token: string, intent: Intent, store: Store): Notice 
     default:
       return { code: 'wrongPhase', detail: (intent as { type: string }).type };
   }
+}
+
+/**
+ * Same people, same colors, new game. The host starts it again; everyone else keeps
+ * their seat and the marked-out player gets their color back.
+ */
+export function returnToLobby(
+  store: Store,
+  code: string,
+  byToken: string,
+): { snapshot?: Snapshot; notice?: Notice } {
+  const room = store.rooms.get(code);
+  if (!room) return { notice: { code: 'unknownCode' } };
+  if (room.hostToken !== byToken) return { notice: { code: 'notHost' } };
+  if (!room.game || room.phase === 'lobby') {
+    return { notice: { code: 'wrongPhase', detail: 'already in the lobby' } };
+  }
+
+  const seed = Math.floor(store.rand() * 2 ** 31);
+  const rng = makeRng(seed);
+  room.game = appendEvent(
+    createGame({ colors: [...room.seatOrder], hostColor: colorOf(room, room.hostToken), seed }, rng),
+    'started',
+    { colors: [...room.seatOrder] },
+  );
+  room.rng = rng;
+  room.phase = 'lobby';
+  room.paused = false;
+  room.waitingFor = null;
+  room.lastActivityAt = store.now();
+  room.rev += 1;
+  room.eventsLog = room.game.events.slice(-EVENT_LOG_LEN);
+
+  return { snapshot: makeSnapshot(room, byToken) };
 }
 
 function gameOf(room: Room): { game: GameState } | { notice: Notice } {

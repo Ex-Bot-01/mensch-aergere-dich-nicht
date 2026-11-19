@@ -11,6 +11,14 @@ export function renderTable(root: HTMLElement, snapshot: Snapshot, actions: Acti
   const onTurn = me !== undefined && me.color !== null && me.color === game?.turnColor;
   const turnPlayer = game ? snapshot.players.find((p) => p.color === game.turnColor) : undefined;
 
+  const host = snapshot.players.find((player) => player.isHost);
+  const again =
+    snapshot.phase !== 'finished'
+      ? ''
+      : snapshot.hostToken === actions.me
+        ? `<button type="button" data-act="again">Play again</button>`
+        : `<p class="hint">Waiting for ${esc(host ? host.name : 'the host')} to start again.</p>`;
+
   const standings = game?.standings
     ? `<ul data-standings>${game.standings
         .map(
@@ -42,12 +50,14 @@ export function renderTable(root: HTMLElement, snapshot: Snapshot, actions: Acti
       }
     </div>
     ${standings}
+    ${again}
   </section>`;
 
   const boardRoot = root.querySelector<HTMLElement>('#board');
   if (boardRoot && game) renderBoard(boardRoot, snapshot, (pieceId) => actions.move(pieceId));
 
   root.querySelector('[data-act="roll"]')?.addEventListener('click', () => actions.roll());
+  root.querySelector('[data-act="again"]')?.addEventListener('click', () => actions.returnToLobby());
   root.querySelector('[data-act="forceContinue"]')?.addEventListener('click', () => {
     if (snapshot.waitingFor) actions.forceContinue(snapshot.waitingFor);
   });
